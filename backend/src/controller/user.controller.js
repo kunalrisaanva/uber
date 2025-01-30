@@ -1,6 +1,8 @@
 import { User } from "../model/user.model.js";
+import  { BlacklistToken } from "../model/blackListToken.js";
 import { createUser } from "../services/user.service.js";
 import { validationResult } from "express-validator";
+
 
 const register = async (req, res) => {
   const errors = validationResult(req);
@@ -52,9 +54,32 @@ const login = async (req, res) => {
 
   const token = user.genreateAuthToken();
 
+  res.cookie("token", token);
+
   res.status(200).json({ token, user });
 };
 
-export { register, login };
+const getUserProfile = async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) return res.status(401).json({ message: "user unauthorized" });
+
+  res.status(200).json({ user });
+};
+
+const logout = async(req,res) => {
+
+    res.clearCookie('token');
+
+    const token = req.cookies.token || req.headers.authorization.split(" ")[1];
+    
+    await BlacklistToken.create({token});
+
+    res.status(200).json({message: "loggout successfully" });
+
+
+}
+
+export { register, login, getUserProfile , logout };
 
 // login, logout, getUserProfile, updateUserProfile, getUsers, deleteUser, getUserById, updateUser

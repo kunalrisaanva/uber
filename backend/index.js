@@ -8,8 +8,6 @@ import { connect } from './src/db/db.js';
 const server = http.createServer(app);
 const port = process.env.PORT || 3000;
 
-app.use(cors());
-
 connect().then(() => {
   server.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
