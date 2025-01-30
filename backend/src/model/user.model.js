@@ -1,62 +1,59 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
-const userSchema = new mongoose.Schema({
-
-    fullName:{
-        firstName:{
-            type: String,
-            required: true,
-            minlength: [3, "First name must be at least 4 characters long"],
-        },
-        lastName:{
-            type: String,
-            minlength: [3, "Last name must be at least 4 characters long"],
-        }
-    },
-
-    email:{
+const userSchema = new mongoose.Schema(
+  {
+    fullname: {
+      firstname: {
         type: String,
         required: true,
-        unique: true,
-        lowercase: true,
-        trim: true,
+        minlength: [3, "First name must be at least 4 characters long"],
+      },
+      lastname: {
+        type: String,
+        minlength: [3, "Last name must be at least 4 characters long"],
+      },
     },
 
-    password:{
-        type: String,
-        required: true,
-        select:false
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
     },
 
-    socketId:{
-        type: String,
+    password: {
+      type: String,
+      required: true,
+      select: false,
     },
+
+    socketId: {
+      type: String,
+    },
+  },
+  { timestamps: true }
+);
+
+userSchema.methods.genreateAuthToken = function () {
+  const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+  return token;
+};
+
+userSchema.methods.isPasswordCorrect = async function (passwword) {
+  return await bcrypt.compare(passwword, this.password);
+};
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
-
-
 
 const User = mongoose.model("User", userSchema);
 
-
-userSchema.methods.genreateAuthToken = function(){
-    const token = jwt.sign({_id:this._id}, process.env.JWT_SECRET, {expiresIn: "1h"});
-    return token;
-}
-
-userSchema.methods.comparePassword = async function(enteredPassword){
-    return await bcrypt.compare(enteredPassword, this.password);
-}
-
-
-userSchema.pre("save", async function(next){
-    if(!this.isModified("password")){
-        next();
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-})
-
-export {User}
+export { User };
