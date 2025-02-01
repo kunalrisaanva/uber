@@ -1,8 +1,7 @@
 import { User } from "../model/user.model.js";
-import  { BlacklistToken } from "../model/blackListToken.js";
+import { BlacklistToken } from "../model/blackListToken.js";
 import { createUser } from "../services/user.service.js";
 import { validationResult } from "express-validator";
-
 
 const register = async (req, res) => {
   const errors = validationResult(req);
@@ -12,6 +11,13 @@ const register = async (req, res) => {
   }
 
   const { fullname, email, password } = req.body;
+
+  const isUserAlready = await User.findOne({ email });
+
+  if (isUserAlready)
+    return res
+      .status(400)
+      .json({ message: " user is already exist with this email" });
 
   try {
     const user = await createUser({
@@ -67,19 +73,16 @@ const getUserProfile = async (req, res) => {
   res.status(200).json({ user });
 };
 
-const logout = async(req,res) => {
+const logout = async (req, res) => {
+  res.clearCookie("token");
 
-    res.clearCookie('token');
+  const token = req.cookies.token || req.headers.authorization.split(" ")[1];
 
-    const token = req.cookies.token || req.headers.authorization.split(" ")[1];
-    
-    await BlacklistToken.create({token});
+  await BlacklistToken.create({ token });
 
-    res.status(200).json({message: "loggout successfully" });
+  res.status(200).json({ message: "loggout successfully" });
+};
 
-
-}
-
-export { register, login, getUserProfile , logout };
+export { register, login, getUserProfile, logout };
 
 // login, logout, getUserProfile, updateUserProfile, getUsers, deleteUser, getUserById, updateUser
